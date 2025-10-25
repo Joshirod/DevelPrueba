@@ -65,3 +65,9 @@ dotnet ef database update
 ```
 dotnet run
 ```
+
+5) Puedes utilizar el siguiente usuario y la siguiente contraseña para ingresar.
+```
+Correo: admin@acme.local
+Contraseña: Admin123!
+```
