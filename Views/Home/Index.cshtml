@@ -1,0 +1,147 @@
+﻿@using DevelPrueba.Models
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Inicio";
+
+    // Optional values set from HomeController (null-safe below)
+    int? encuestasCount = ViewBag.EncuestasCount as int?;
+    int? respuestasCount = ViewBag.RespuestasCount as int?;
+    IEnumerable<Encuesta>? ultimas = ViewBag.UltimasEncuestas as IEnumerable<Encuesta>;
+}
+
+<style>
+    .hero {
+        background: radial-gradient(65% 140% at 0% 0%, #eef4ff 0%, #ffffff 60%);
+        border-radius: 1rem;
+        border: 1px solid #e9ecef;
+    }
+
+        .hero h1 {
+            letter-spacing: .2px;
+        }
+
+        .hero .lead {
+            color: #6c757d;
+        }
+
+    .card-soft {
+        border: 1px solid #eef1f4;
+        box-shadow: 0 6px 24px rgba(16,24,40,.05);
+        border-radius: 1rem;
+    }
+
+    .stat {
+        display: flex;
+        flex-direction: column;
+        gap: .25rem;
+    }
+
+        .stat .label {
+            color: #6c757d;
+            font-size: .875rem;
+        }
+
+        .stat .value {
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #fff;
+    }
+
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .muted {
+        color: #6c757d;
+    }
+</style>
+
+<div class="container py-4 py-md-5">
+
+    <!-- HERO -->
+    <div class="hero p-4 p-md-5 mb-4">
+        <div class="row align-items-center g-4">
+            <div class="col-12 col-lg-8">
+                <h1 class="mb-2">Bienvenido a tu panel de encuestas</h1>
+                <p class="lead mb-4">
+                    Crea encuestas dinámicas, comparte el enlace público y consulta resultados en tiempo real.
+                </p>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <a asp-controller="Encuestas" asp-action="Create" class="btn btn-primary btn-icon">
+                        <!-- plus icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5V7.5h3a.5.5 0 0 1 0 1h-3V11.5a.5.5 0 0 1-1 0V8.5H4.5a.5.5 0 0 1 0-1H7.5V4.5A.5.5 0 0 1 8 4" /></svg>
+                        Nueva encuesta
+                    </a>
+                    <a asp-controller="Encuestas" asp-action="Index" class="btn btn-outline-secondary btn-icon">
+                        <!-- list icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M2.5 12a.5.5 0 0 1 .5-.5H13a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5H13a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5m0-4A.5.5 0 0 1 3 3h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5" /></svg>
+                        Ver encuestas
+                    </a>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- QUICK LINKS -->
+    <div class="row g-3 g-md-4 mb-4">
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card-soft p-3 h-100">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-2">
+                        <!-- share icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#0d6efd" viewBox="0 0 16 16"><path d="M13.5 1a1.5 1.5 0 1 1-1.415 2h-7.67a1.5 1.5 0 1 1 0-1h7.67A1.5 1.5 0 0 1 13.5 1M3 5a1 1 0 0 0-1 1v6.5A1.5 1.5 0 0 0 3.5 14h9A1.5 1.5 0 0 0 14 12.5V6a1 1 0 0 0-1-1H3Zm1 2h8v5H4V7Z" /></svg>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Comparte tus encuestas</h6>
+                        <p class="mb-2 small text-muted">Genera un enlace público al crear una encuesta.</p>
+                        <a asp-controller="Encuestas" asp-action="Index" class="btn btn-sm btn-outline-primary">Ir a encuestas</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card-soft p-3 h-100">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="rounded-circle bg-success bg-opacity-10 p-2">
+                        <!-- check icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#198754" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05L7.477 10.59a.75.75 0 0 1-1.08.02L3.324 7.646a.75.75 0 1 1 1.06-1.06L6.97 9.22l4-4.25Z" /></svg>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Resultados en tiempo real</h6>
+                        <p class="mb-2 small text-muted">Consulta respuestas y expórtalas a CSV.</p>
+                        <a asp-controller="Encuestas" asp-action="Index" class="btn btn-sm btn-outline-success">Ver resultados</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card-soft p-3 h-100">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-2">
+                        <!-- copy icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="#ffc107" viewBox="0 0 16 16"><path d="M4 1h8a2 2 0 0 1 2 2v7h-1V3a1 1 0 0 0-1-1H4V1Zm-2 3a2 2 0 0 1 2-2h7v1H4a1 1 0 0 0-1 1v9h9a1 1 0 0 0 1-1V5h1v7a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4Z" /></svg>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Duplicar encuestas</h6>
+                        <p class="mb-2 small text-muted">Acelera tu flujo duplicando una encuesta existente.</p>
+                        <a asp-controller="Encuestas" asp-action="Index" class="btn btn-sm btn-outline-warning">Duplicar ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  
+</div>

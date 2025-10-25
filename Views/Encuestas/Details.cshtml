@@ -1,0 +1,171 @@
+﻿@model DevelPrueba.Models.Encuesta
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@using DevelPrueba.Models
+
+@{
+    ViewData["Title"] = "Detalles de Encuesta";
+    var linkPublico = (string)(ViewBag.LinkPublico ?? "");
+    var eliminarMsg = $"¿Eliminar la encuesta \"{Model?.Nombre}\"? Esta acción es permanente.";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h2 class="mb-0">@Model!.Nombre</h2>
+        <div class="text-muted">Detalles de la encuesta</div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" asp-action="Index">Volver</a>
+        <a class="btn btn-primary" asp-controller="Public" asp-action="Fill" asp-route-slug="@Model.SlugPublico" target="_blank">
+            Llenar (vista pública)
+        </a>
+        <a class="btn btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Editar</a>
+
+        <a class="btn btn-success" asp-controller="Respuestas" asp-action="Index" asp-route-id="@Model.Id">
+            Resultados
+        </a>
+
+        @* Form de eliminar con confirmación (sin C# dentro del atributo del TagHelper) *@
+        <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+            <button type="submit" class="btn btn-outline-danger"
+                    onclick="return confirm('@eliminarMsg');">
+                Eliminar
+            </button>
+        </form>
+    </div>
+</div>
+
+@if (!Model.Activa)
+{
+    <div class="alert alert-warning border-0 shadow-sm" role="alert">
+        La encuesta está <strong>Inactiva</strong>.
+    </div>
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        @if (Model.Activa)
+                        {
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">Activa</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3">Inactiva</span>
+                        }
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3">
+                            @((Model.Campos?.Count) ?? 0) campos
+                        </span>
+                    </div>
+
+                    <div class="text-muted small">
+                        Creada: @Model.FechaCreacion.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Descripcion))
+                {
+                    <hr />
+                    <p class="mb-0">@Model.Descripcion</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="fw-semibold mb-2">Link público</div>
+                <div class="input-group">
+                    <input type="text" class="form-control" value="@linkPublico" readonly />
+                    <button class="btn btn-outline-secondary" type="button" id="btnCopyLink">Copiar</button>
+                </div>
+                <div class="small text-muted mt-2">
+                    Comparte este link para que cualquiera pueda llenar la encuesta.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <h5 class="m-0">Campos</h5>
+            <a class="btn btn-sm btn-outline-primary" asp-action="Edit" asp-route-id="@Model.Id">Editar campos</a>
+        </div>
+
+        @if (Model.Campos == null || Model.Campos.Count == 0)
+        {
+            <div class="text-center text-muted py-4">
+                No hay campos configurados.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 80px;">Orden</th>
+                            <th>Nombre</th>
+                            <th>Título</th>
+                            <th style="width: 140px;">Tipo</th>
+                            <th style="width: 120px;" class="text-center">Requerido</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Campos.OrderBy(x => x.Orden))
+                        {
+                            <tr>
+                                <td>@c.Orden</td>
+                                <td class="text-monospace">@c.Nombre</td>
+                                <td>@c.Titulo</td>
+                                <td>@c.Tipo</td>
+                                <td class="text-center">
+                                    @if (c.EsRequerido)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">Sí</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3">No</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const btn = document.getElementById('btnCopyLink');
+            if (!btn) return;
+
+            btn.addEventListener('click', async () => {
+                const input = btn.closest('.input-group')?.querySelector('input');
+                if (!input) return;
+
+                try {
+                    await navigator.clipboard.writeText(input.value);
+                } catch {
+                    // Fallback without execCommand — just select to let user Ctrl+C manually
+                    input.focus();
+                    input.select();
+                }
+
+                const original = btn.textContent;
+                btn.textContent = 'Copiado';
+                setTimeout(() => btn.textContent = original, 1500);
+            });
+        })();
+    </script>
+}

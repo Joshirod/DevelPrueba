@@ -1,0 +1,192 @@
+﻿@model IEnumerable<DevelPrueba.Models.Encuesta>
+@using DevelPrueba.Models
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    ViewData["Title"] = "Encuestas";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h2 class="mb-0">@ViewData["Title"]</h2>
+        <div class="text-muted">Administra y comparte tus encuestas</div>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        + Nueva Encuesta
+    </a>
+</div>
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @successMsg
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="row g-2 mb-3">
+            <div class="col-12 col-md-6">
+                <input id="searchBox" class="form-control" placeholder="Buscar por nombre o descripción..." />
+            </div>
+            <div class="col-12 col-md-3">
+                <select id="estadoFilter" class="form-select">
+                    <option value="">Todos los estados</option>
+                    <option value="Activa">Activas</option>
+                    <option value="Inactiva">Inactivas</option>
+                </select>
+            </div>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="text-center text-muted py-5">
+                <div class="display-6 mb-2">Aún no hay encuestas</div>
+                <p class="mb-3">Crea tu primera encuesta para empezar a recolectar respuestas.</p>
+                <a asp-action="Create" class="btn btn-primary btn-lg">Crear encuesta</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle" id="tblEncuestas">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width: 260px;">Encuesta</th>
+                            <th class="text-center">Estado</th>
+                            <th class="text-center">Campos</th>
+                            <th style="min-width: 240px;">Link público</th>
+                            <th style="min-width: 170px;">Creación</th>
+                            <th style="width: 160px;">Opciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var e in Model)
+                    {
+                        var linkPublico = Url.Action("Fill", "Public", new { slug = e.SlugPublico }, Context.Request.Scheme);
+                        <tr data-row
+                            data-nombre="@e.Nombre"
+                            data-desc="@e.Descripcion"
+                            data-estado="@(e.Activa ? "Activa" : "Inactiva")">
+                            <td>
+                                <div class="fw-semibold">@e.Nombre</div>
+                                @if (!string.IsNullOrWhiteSpace(e.Descripcion))
+                                {
+                                    <div class="text-muted small text-truncate" style="max-width:420px;">@e.Descripcion</div>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (e.Activa)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">Activa</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3">Inactiva</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">@((e.Campos?.Count) ?? 0)</span>
+                            </td>
+                            <td>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control" value="@linkPublico" readonly />
+                                    <button type="button" class="btn btn-outline-secondary" data-copy="@linkPublico" title="Copiar link">Copiar</button>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    @e.FechaCreacion.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                        <form asp-action="Duplicate" asp-route-id="@e.Id" method="get">
+                                            <button type="submit" class="btn btn-outline-primary">Duplicar</button>
+                                        </form>
+                                        <form asp-action="Details" asp-route-id="@e.Id" method="get">
+                                            <button type="submit" class="btn btn-outline-secondary">Detalles</button>
+                                        </form>
+                                        @{
+                                            var msg = $"¿Eliminar la encuesta \"{e.Nombre}\"? Esta acción es permanente.";
+                                        }
+                                        <form asp-action="Delete" asp-route-id="@e.Id" method="post"
+                                              onsubmit="return confirm('@msg');">
+
+                                        <button type="submit" class="btn btn-outline-danger">Eliminar</button>
+                                    </form>
+
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // Copy link
+            document.querySelectorAll('[data-copy]').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(btn.getAttribute('data-copy'));
+                        btn.textContent = 'Copiado';
+                        setTimeout(() => btn.textContent = 'Copiar', 1500);
+                    } catch {
+                        // Fallback: select the input next to the button
+                        const input = btn.closest('.input-group')?.querySelector('input');
+                        if (input) {
+                            input.select();
+                            document.execCommand('copy');
+                            btn.textContent = 'Copiado';
+                            setTimeout(() => btn.textContent = 'Copiar', 1500);
+                        }
+                    }
+                });
+            });
+
+            // Client-side filter (search + estado)
+            const search = document.getElementById('searchBox');
+            const estado = document.getElementById('estadoFilter');
+            const rows = Array.from(document.querySelectorAll('#tblEncuestas tbody tr[data-row]'));
+
+            function normalize(s) { return (s || '').toString().toLowerCase().trim(); }
+
+            function applyFilter() {
+                const q = normalize(search.value);
+                const est = normalize(estado.value);
+                let visible = 0;
+
+                rows.forEach(r => {
+                    const name = normalize(r.getAttribute('data-nombre'));
+                    const desc = normalize(r.getAttribute('data-desc'));
+                    const st = normalize(r.getAttribute('data-estado'));
+                    const matchText = !q || name.includes(q) || desc.includes(q);
+                    const matchEstado = !est || st === normalize(est);
+                    const show = matchText && matchEstado;
+                    r.style.display = show ? '' : 'none';
+                    if (show) visible++;
+                });
+
+                // Optional: show an empty message row if nothing matches
+                let emptyRow = document.getElementById('noMatchesRow');
+                if (!emptyRow) {
+                    emptyRow = document.createElement('tr');
+                    emptyRow.id = 'noMatchesRow';
+                    emptyRow.innerHTML = `<td colspan="6" class="text-center text-muted py-4">No hay resultados</td>`;
+                    document.querySelector('#tblEncuestas tbody').appendChild(emptyRow);
+                }
+                emptyRow.style.display = (visible === 0) ? '' : 'none';
+            }
+
+            if (search) search.addEventListener('input', applyFilter);
+            if (estado) estado.addEventListener('change', applyFilter);
+            applyFilter(); // initial run
+        })();
+    </script>
+}

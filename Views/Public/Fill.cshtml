@@ -1,0 +1,128 @@
+﻿@model DevelPrueba.ViewModels.FillSurveyVm
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+
+
+@{
+    ViewData["Title"] = Model.Titulo ?? "Encuesta";
+    // helper to show a server-side error for a given key (e.g., campo.Nombre)
+    Func<string, IHtmlContent?> errorFor = key =>
+    {
+        if (ViewData?.ModelState != null &&
+            ViewData.ModelState.TryGetValue(key, out var entry) &&
+            entry.Errors.Count > 0)
+        {
+            // show the first error; you can list all if you prefer
+            return new HtmlString($"<div class=\"text-danger small mt-1\">{entry.Errors[0].ErrorMessage}</div>");
+        }
+        return null;
+    };
+}
+
+<div class="container my-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8">
+
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div>
+                    <h2 class="mb-0">@Model.Titulo</h2>
+                    @if (!string.IsNullOrWhiteSpace(Model.Descripcion))
+                    {
+                        <div class="text-muted">@Model.Descripcion</div>
+                    }
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <!-- Global summary for any non-field errors -->
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <form asp-action="Fill" method="post">
+                        @Html.AntiForgeryToken()
+
+                        @* Optional anti-spam honeypot (front-only). If you enable on server, keep this. *@
+                        @* <div style="position:absolute; left:-10000px; top:auto; width:1px; height:1px; overflow:hidden;">
+                            <label for="hp">No llenar</label>
+                            <input id="hp" name="hp" type="text" autocomplete="off" />
+                           </div> *@
+
+                        @for (int i = 0; i < Model.Campos.Count; i++)
+                        {
+                            var campo = Model.Campos[i];
+                            var name = $"Valores[{campo.Nombre}]"; // input name (Dictionary binder)
+                            var id = $"val_{campo.Nombre}";        // unique id for label/aria
+                            var val = (Model.Valores != null && Model.Valores.ContainsKey(campo.Nombre))
+                            ? Model.Valores[campo.Nombre]
+                            : string.Empty;
+
+                            <div class="mb-3">
+                                <label class="form-label" for="@id">
+                                    @campo.Titulo
+                                    @if (campo.EsRequerido)
+                                    {
+                                        <span class="text-danger">*</span>
+                                    }
+                                </label>
+
+                                @switch (campo.Tipo)
+                                {
+                                    case DevelPrueba.Models.TipoCampo.Texto:
+                                        {
+                                            <input class="form-control"
+                                                   id="@id"
+                                                   name="@name"
+                                                   value="@val"
+                                                   placeholder="Ingrese @campo.Titulo"
+                                                   @(campo.EsRequerido ? "required" : null) />
+                                            break;
+                                        }
+                                    case DevelPrueba.Models.TipoCampo.Numero:
+                                        {
+                                            <input type="number"
+                                                   class="form-control"
+                                                   id="@id"
+                                                   name="@name"
+                                                   step="any"
+                                                   value="@val"
+                                                   placeholder="Ingrese @campo.Titulo"
+                                                   @(campo.EsRequerido ? "required" : null) />
+                                            break;
+                                        }
+                                    case DevelPrueba.Models.TipoCampo.Fecha:
+                                    default:
+                                        {
+                                            <input type="date"
+                                                   class="form-control"
+                                                   id="@id"
+                                                   name="@name"
+                                                   value="@val"
+                                                   @(campo.EsRequerido ? "required" : null) />
+                                            break;
+                                        }
+                                }
+
+                                @* Show per-field server-side error (uses ModelState key = campo.Nombre) *@
+                                @errorFor(campo.Nombre)
+                            </div>
+                        }
+
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary">Enviar respuesta</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="small text-muted mt-3">
+                * Campos requeridos
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- If you rely on client-side validation, ensure jQuery + validation are in layout.
+         Here we mainly show server-side errors via ModelState per key. -->
+}

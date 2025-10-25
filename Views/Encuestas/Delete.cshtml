@@ -1,0 +1,111 @@
+﻿@model DevelPrueba.Models.Encuesta
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@{
+    ViewData["Title"] = "Eliminar Encuesta";
+    var respuestasCount = (int)(ViewBag.RespuestasCount ?? 0);
+    var linkPublico = (string)(ViewBag.LinkPublico ?? "");
+    var canDelete = respuestasCount == 0;
+
+    // PREPARE CONFIRM MESSAGE ONCE (outside of @if to avoid Razor nesting error)
+    var confirmMsg = $"¿Seguro que deseas eliminar la encuesta \"{Model.Nombre}\"? Esta acción no se puede deshacer.";
+
+    var warnMsg = canDelete
+        ? $"¿Eliminar la encuesta \"{Model.Nombre}\"? Esta acción es permanente."
+        : $"Esta encuesta tiene {respuestasCount} respuesta(s). No se puede eliminar hasta que elimines esas respuestas.";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h2 class="mb-0">Eliminar encuesta</h2>
+        <div class="text-muted">Confirma antes de continuar</div>
+    </div>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Volver a detalles</a>
+</div>
+
+@if (!canDelete)
+{
+    <div class="alert alert-danger border-0 shadow-sm">
+        <strong>No se puede eliminar.</strong> @warnMsg
+    </div>
+}
+else
+{
+    <div class="alert alert-warning border-0 shadow-sm">
+        <strong>Atención:</strong> @warnMsg
+    </div>
+}
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Nombre</dt>
+            <dd class="col-sm-9">@Model.Nombre</dd>
+
+            <dt class="col-sm-3">Descripción</dt>
+            <dd class="col-sm-9">@Model.Descripcion</dd>
+
+            <dt class="col-sm-3">Estado</dt>
+            <dd class="col-sm-9">@(Model.Activa ? "Activa" : "Inactiva")</dd>
+
+            <dt class="col-sm-3">Campos</dt>
+            <dd class="col-sm-9">@((Model.Campos?.Count) ?? 0)</dd>
+
+            <dt class="col-sm-3">Respuestas</dt>
+            <dd class="col-sm-9">@respuestasCount</dd>
+
+            <dt class="col-sm-3">Link público</dt>
+            <dd class="col-sm-9">
+                <div class="input-group input-group-sm" style="max-width:680px;">
+                    <input type="text" class="form-control" value="@linkPublico" readonly />
+                    <button class="btn btn-outline-secondary" type="button" id="btnCopy">Copiar</button>
+                </div>
+            </dd>
+
+            <dt class="col-sm-3">Creada</dt>
+            <dd class="col-sm-9">@Model.FechaCreacion.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</dd>
+        </dl>
+    </div>
+</div>
+
+<form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+    @Html.AntiForgeryToken()
+
+    <div class="d-flex gap-2">
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Cancelar</a>
+
+        @if (canDelete)
+        {
+            <button type="submit" class="btn btn-danger"
+                    onclick="return confirm('@confirmMsg');">
+                Eliminar definitivamente
+            </button>
+        }
+        else
+        {
+            <button type="button" class="btn btn-danger" disabled>
+                Eliminar definitivamente
+            </button>
+        }
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        (function () {
+            const btn = document.getElementById('btnCopy');
+            if (!btn) return;
+            btn.addEventListener('click', async () => {
+                const input = btn.closest('.input-group')?.querySelector('input');
+                if (!input) return;
+                try {
+                    await navigator.clipboard.writeText(input.value);
+                    const text = btn.textContent;
+                    btn.textContent = 'Copiado';
+                    setTimeout(() => btn.textContent = text, 1500);
+                } catch {}
+            });
+
+        })();
+    </script>
+}

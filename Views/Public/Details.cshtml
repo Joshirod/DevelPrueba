@@ -1,0 +1,14 @@
+﻿@model DevelPrueba.Models.Encuesta
+<h2>@Model.Nombre</h2>
+<p>@Model.Descripcion</p>
+<p><strong>Link público:</strong> <a href="@ViewBag.LinkPublico" target="_blank">@ViewBag.LinkPublico</a></p>
+<table class="table">
+    <thead><tr><th>Orden</th><th>Nombre</th><th>Título</th><th>Tipo</th><th>Req</th></tr></thead>
+    <tbody>
+        @foreach (var c in Model.Campos.OrderBy(x => x.Orden))
+        {
+            <tr><td>@c.Orden</td><td>@c.Nombre</td><td>@c.Titulo</td><td>@c.Tipo</td><td>@(c.EsRequerido ? "Sí" : "No")</td></tr>
+        }
+    </tbody>
+</table>
+<a class="btn btn-info" asp-controller="Results" asp-action="Index" asp-route-id="@Model.Id">Ver resultados</a>

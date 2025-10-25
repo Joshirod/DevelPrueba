@@ -1,0 +1,24 @@
+﻿@model DevelPrueba.ViewModels.ResultsVm
+<h2>Resultados: @Model.EncuestaNombre</h2>
+<a class="btn btn-secondary" asp-action="ExportCsv">Exportar CSV</a>
+<table class="table table-striped mt-3">
+    <thead>
+        <tr>
+            @foreach (var col in Model.Columnas)
+            {
+                <th>@col</th>
+            }
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var fila in Model.Filas)
+        {
+            <tr>
+                @foreach (var celda in fila)
+                {
+                    <td>@celda</td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>

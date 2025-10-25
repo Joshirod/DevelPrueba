@@ -1,0 +1,415 @@
+﻿@model DevelPrueba.Models.Encuesta
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@using DevelPrueba.Models
+@{
+    ViewData["Title"] = "Editar Encuesta";
+
+    // Build enum options with NUMERIC values (prevents '' invalid binding)
+    var enumOptionsHtml = new System.Text.StringBuilder();
+    foreach (var value in Enum.GetValues(typeof(TipoCampo)))
+    {
+        var intVal = (int)(TipoCampo)value;
+        var name = Enum.GetName(typeof(TipoCampo), value);
+        enumOptionsHtml.Append($@"<option value=""{intVal}"">{name}</option>");
+    }
+    string tipoOptions = enumOptionsHtml.ToString();
+}
+
+<h2 class="mb-3">Editar: @Model.Nombre</h2>
+
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="card mb-3">
+        <div class="card-body row g-3">
+            <div class="col-12 col-md-6">
+                <label asp-for="Nombre" class="form-label">Nombre de Encuesta</label>
+                <input asp-for="Nombre" class="form-control" />
+                <span asp-validation-for="Nombre" class="text-danger"></span>
+            </div>
+
+            <div class="col-12">
+                <label asp-for="Descripcion" class="form-label">Descripción</label>
+                <textarea asp-for="Descripcion" rows="3" class="form-control"></textarea>
+                <span asp-validation-for="Descripcion" class="text-danger"></span>
+            </div>
+
+            <div class="col-12">
+                <div class="form-check">
+                    <input class="form-check-input" asp-for="Activa" />
+                    <label class="form-check-label" asp-for="Activa">Activa</label>
+                </div>
+                <span asp-validation-for="Activa" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between mb-2">
+        <h5 class="m-0">Campos de la Encuesta</h5>
+        <button type="button" id="btnAddCampo" class="btn btn-sm btn-primary">+ Agregar campo</button>
+    </div>
+
+    <div id="campos-list" class="d-grid gap-2">
+        @if (Model?.Campos != null && Model.Campos.Count > 0)
+        {
+            for (var i = 0; i < Model.Campos.Count; i++)
+            {
+                var c = Model.Campos[i];
+                <div class="card" data-campo-row data-index="@i">
+                    <div class="card-body">
+                        <div class="row g-3 align-items-end">
+                            <!-- Orden oculto, se actualizará en drag&drop -->
+                            <input type="hidden" name="@($"Campos[{i}].Orden")" value="@c.Orden" data-orden />
+
+                            <!-- Handle de arrastre (draggable aquí) -->
+                            <div class="col-12">
+                                <button type="button" class="btn btn-light btn-sm"
+                                        title="Arrastrar para reordenar"
+                                        data-drag-handle
+                                        draggable="true">
+                                    &#9776; Reordenar
+                                </button>
+                            </div>
+
+                            <!-- Campo.Id (opcional en Edit) -->
+                            <input type="hidden" name="@($"Campos[{i}].Id")" value="@c.Id" />
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label" for="@($"Campos_{i}__Nombre")">Nombre (interno)</label>
+                                <input class="form-control"
+                                       id="@($"Campos_{i}__Nombre")"
+                                       name="@($"Campos[{i}].Nombre")"
+                                       value="@c.Nombre"
+                                       placeholder="ej. email, edad" />
+                                @Html.ValidationMessage($"Campos[{i}].Nombre", "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label" for="@($"Campos_{i}__Titulo")">Título (visible)</label>
+                                <input class="form-control"
+                                       id="@($"Campos_{i}__Titulo")"
+                                       name="@($"Campos[{i}].Titulo")"
+                                       value="@c.Titulo"
+                                       placeholder="ej. Correo electrónico" />
+                                @Html.ValidationMessage($"Campos[{i}].Titulo", "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-12 col-md-2">
+                                <label class="form-label" for="@($"Campos_{i}__Tipo")">Tipo</label>
+                                <select class="form-select"
+                                        id="@($"Campos_{i}__Tipo")"
+                                        name="@($"Campos[{i}].Tipo")">
+                                    @foreach (var value in Enum.GetValues(typeof(TipoCampo)))
+                                    {
+                                        var intVal = (int)(TipoCampo)value;
+                                        var name = Enum.GetName(typeof(TipoCampo), value);
+                                        <option value="@intVal" selected="@( (int)c.Tipo == intVal )">@name</option>
+                                    }
+                                </select>
+                                @Html.ValidationMessage($"Campos[{i}].Tipo", "", new { @class = "text-danger" })
+                            </div>
+
+                            <div class="col-6 col-md-2">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="@($"Campos_{i}__EsRequerido")"
+                                           name="@($"Campos[{i}].EsRequerido")"
+                                           value="true" @(c.EsRequerido ? "checked" : null) />
+                                    <input type="hidden" name="@($"Campos[{i}].EsRequerido")" value="false" />
+                                    <label class="form-check-label" for="@($"Campos_{i}__EsRequerido")">Requerido</label>
+                                </div>
+                            </div>
+
+                            <div class="col-6 col-md-1 text-end">
+                                <button type="button" class="btn btn-outline-danger" data-action="remove" title="Quitar campo">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+        <a asp-action="Details" asp-route-id="@Model!.Id" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-success">Guardar cambios</button>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <template id="tipo-options-template">
+        @Html.Raw(tipoOptions)
+    </template>
+
+    <script>
+            (function () {
+                const list = document.getElementById('campos-list');
+                const btnAdd = document.getElementById('btnAddCampo');
+                const enumOptions = document.getElementById('tipo-options-template').innerHTML.trim();
+
+                // ---------- helpers ----------
+                function nextIndex() {
+                    const rows = list.querySelectorAll('[data-campo-row]');
+                    if (rows.length === 0) return 0;
+                    let max = -1;
+                    rows.forEach(r => {
+                        const idx = parseInt(r.getAttribute('data-index'));
+                        if (!isNaN(idx) && idx > max) max = idx;
+                    });
+                    return max + 1;
+                }
+
+                function escapeHtml(str) {
+                    if (str == null) return '';
+                    return String(str)
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+                }
+
+                // Sincroniza los inputs hidden de Orden con el orden actual en el DOM
+                function syncOrden() {
+                    const rows = Array.from(list.querySelectorAll('[data-campo-row]'));
+                    rows.forEach((row, i) => {
+                        const orden = row.querySelector('input[data-orden]');
+                        if (orden) orden.value = i; // 0..N-1
+                    });
+                }
+
+                // ---------- Drag & Drop ----------
+                let dragged = null;
+
+                function onHandleDragStart(e) {
+                    const handle = e.currentTarget;
+                    const row = handle.closest('[data-campo-row]');
+                    if (!row) return;
+
+                    dragged = row;
+                    row.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    try { e.dataTransfer.setData('text/plain', 'drag'); } catch {}
+                }
+
+                function onHandleDragEnd() {
+                    if (dragged) dragged.classList.remove('dragging');
+                    dragged = null;
+                    syncOrden();
+                }
+
+                function onRowDragOver(e) {
+                    if (!dragged) return;
+                    e.preventDefault();
+                    e.currentTarget.setAttribute('data-drag-over', '');
+                }
+
+                function onRowDragLeave(e) {
+                    e.currentTarget.removeAttribute('data-drag-over');
+                }
+
+                function onRowDrop(e) {
+                    if (!dragged) return;
+                    e.preventDefault();
+                    const over = e.currentTarget;
+                    over.removeAttribute('data-drag-over');
+
+                    if (over === dragged) return;
+
+                    const rect = over.getBoundingClientRect();
+                    const offset = e.clientY - rect.top;
+                    const after = offset > rect.height / 2;
+
+                    if (after) over.after(dragged);
+                    else over.before(dragged);
+
+                    syncOrden();
+                }
+
+                function wireDnD(row) {
+                    // Drag start/end on handle
+                    const handle = row.querySelector('[data-drag-handle]');
+                    if (handle) {
+                        handle.setAttribute('draggable', 'true');
+                        handle.addEventListener('dragstart', onHandleDragStart);
+                        handle.addEventListener('dragend', onHandleDragEnd);
+                    }
+                    // Row is drop target
+                    row.addEventListener('dragover', onRowDragOver);
+                    row.addEventListener('dragleave', onRowDragLeave);
+                    row.addEventListener('drop', onRowDrop);
+                }
+
+                // ---------- Rows (crear / eventos / validación) ----------
+                function createRow(idx, values) {
+                    const v = Object.assign({
+                        id: '',
+                        nombre: '',
+                        titulo: '',
+                        tipo: '',         // numeric string like "0", "1", ...
+                        requerido: false
+                    }, values || {});
+
+                    const html = `
+        <div class="card" data-campo-row data-index="${idx}">
+          <div class="card-body">
+            <div class="row g-3 align-items-end">
+              <!-- Orden oculto -->
+              <input type="hidden" name="Campos[${idx}].Orden" value="${idx}" data-orden />
+
+              <!-- Handle de arrastre (draggable aquí) -->
+              <div class="col-12">
+                <button type="button" class="btn btn-light btn-sm"
+                        title="Arrastrar para reordenar"
+                        data-drag-handle
+                        draggable="true">
+                  &#9776; Reordenar
+                </button>
+              </div>
+
+              <!-- Hidden Id optional -->
+              <input type="hidden" name="Campos[${idx}].Id" value="${v.id || 0}">
+
+              <div class="col-12 col-md-3">
+                <label class="form-label" for="Campos_${idx}__Nombre">Nombre (interno)</label>
+                <input class="form-control"
+                       id="Campos_${idx}__Nombre"
+                       name="Campos[${idx}].Nombre"
+                       value="${escapeHtml(v.nombre)}"
+                       placeholder="ej. email, edad"
+                       data-val="true"
+                       data-val-required="El nombre es requerido"
+                       data-val-length="Máximo 100 caracteres"
+                       data-val-length-max="100">
+                <span class="text-danger field-validation-valid"
+                      data-valmsg-for="Campos[${idx}].Nombre"
+                      data-valmsg-replace="true"></span>
+              </div>
+
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="Campos_${idx}__Titulo">Título (visible)</label>
+                <input class="form-control"
+                       id="Campos_${idx}__Titulo"
+                       name="Campos[${idx}].Titulo"
+                       value="${escapeHtml(v.titulo)}"
+                       placeholder="ej. Correo electrónico"
+                       data-val="true"
+                       data-val-required="El título es requerido"
+                       data-val-length="Máximo 200 caracteres"
+                       data-val-length-max="200">
+                <span class="text-danger field-validation-valid"
+                      data-valmsg-for="Campos[${idx}].Titulo"
+                      data-valmsg-replace="true"></span>
+              </div>
+
+              <div class="col-12 col-md-2">
+                <label class="form-label" for="Campos_${idx}__Tipo">Tipo</label>
+                <select class="form-select"
+                        id="Campos_${idx}__Tipo"
+                        name="Campos[${idx}].Tipo"
+                        data-val="true"
+                        data-val-required="El tipo es requerido">
+                  ${enumOptions}
+                </select>
+                <span class="text-danger field-validation-valid"
+                      data-valmsg-for="Campos[${idx}].Tipo"
+                      data-valmsg-replace="true"></span>
+              </div>
+
+              <div class="col-6 col-md-2">
+                <div class="form-check mt-4">
+                  <input class="form-check-input"
+                         type="checkbox"
+                         id="Campos_${idx}__EsRequerido"
+                         name="Campos[${idx}].EsRequerido"
+                         value="true" ${v.requerido ? 'checked' : ''}>
+                  <input type="hidden" name="Campos[${idx}].EsRequerido" value="false">
+                  <label class="form-check-label" for="Campos_${idx}__EsRequerido">Requerido</label>
+                </div>
+              </div>
+
+              <div class="col-6 col-md-1 text-end">
+                <button type="button" class="btn btn-outline-danger" data-action="remove" title="Quitar campo">&times;</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+                    const wrapper = document.createElement('div');
+                    wrapper.innerHTML = html.trim();
+                    const row = wrapper.firstElementChild;
+
+                    // Default selection for enum (numeric) to avoid ""
+                    const sel = row.querySelector(`select[name="Campos[${idx}].Tipo"]`);
+                    if (sel) {
+                        if (v.tipo !== '' && v.tipo !== null && v.tipo !== undefined) {
+                            const opt = Array.from(sel.options).find(o => o.value === String(v.tipo));
+                            if (opt) opt.selected = true; else sel.selectedIndex = 0;
+                        } else {
+                            sel.selectedIndex = 0;
+                        }
+                    }
+
+                    // Parse unobtrusive validation for the new row
+                    if (window.jQuery && window.jQuery.validator && window.jQuery.validator.unobtrusive) {
+                        window.jQuery.validator.unobtrusive.parse(row);
+                    }
+                    return row;
+                }
+
+                function wireRowEvents(row) {
+                    const removeBtn = row.querySelector('[data-action="remove"]');
+                    if (removeBtn) {
+                        removeBtn.addEventListener('click', function () {
+                            row.remove();
+                            syncOrden();
+                        });
+                    }
+                    if (window.jQuery && window.jQuery.validator && window.jQuery.validator.unobtrusive) {
+                        window.jQuery.validator.unobtrusive.parse(row);
+                    }
+                    wireDnD(row);
+                }
+
+                function wireDnD(row) {
+                    // Drag on handle
+                    const handle = row.querySelector('[data-drag-handle]');
+                    if (handle) {
+                        handle.setAttribute('draggable', 'true');
+                        handle.addEventListener('dragstart', onHandleDragStart);
+                        handle.addEventListener('dragend', onHandleDragEnd);
+                    }
+                    // Row as drop target
+                    row.addEventListener('dragover', onRowDragOver);
+                    row.addEventListener('dragleave', onRowDragLeave);
+                    row.addEventListener('drop', onRowDrop);
+                }
+
+                // wire existentes
+                list.querySelectorAll('[data-campo-row]').forEach(wireRowEvents);
+                // primera sincronización
+                syncOrden();
+
+                // agregar nuevo
+                btnAdd.addEventListener('click', function () {
+                    const idx = nextIndex();
+                    const row = createRow(idx);
+                    list.appendChild(row);
+                    wireRowEvents(row);
+                    syncOrden();
+                });
+
+                // sincronizar antes de submit
+                const form = list.closest('form');
+                if (form) {
+                    form.addEventListener('submit', () => syncOrden());
+                }
+            })();
+    </script>
+}
+
