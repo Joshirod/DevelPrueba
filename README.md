@@ -49,18 +49,19 @@ Aplicación web para crear, compartir y gestionar encuestas dinámicas. Los usua
 ```bash
 git clone https://github.com/Joshirod/DevelPrueba.git
 cd DevelPrueba
-
+```
 2) Ajustar cadena de conexión en appsettings.json
-
+```
 "ConnectionStrings": {
   "DefaultConnection": "Server=.;Database=EncuestasDb;Trusted_Connection=True;MultipleActiveResultSets=true"
 }
-
+```
 3) Crear base y aplicar migraciones
-
+```
 dotnet ef database update
-
+```
 
 4) Ejecutar
-
+```
 dotnet run
+```
